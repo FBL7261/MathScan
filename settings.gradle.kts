@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 rootProject.name = "MathScanv2"
 include(":app")
 include(":opencv")
+
+
