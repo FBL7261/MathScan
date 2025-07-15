@@ -15,6 +15,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.jimrc.mathscanv2.databinding.ActivityStartBinding
 import java.io.File
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.widget.Toast
+
 
 class StartActivity : AppCompatActivity() {
 
@@ -30,6 +34,8 @@ class StartActivity : AppCompatActivity() {
         binding = ActivityStartBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
+
         // Configurar el Spinner con los cursos
         val courses = arrayOf("1ro Básico", "2do Básico", "3ro Básico", "4to Básico")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, courses)
@@ -38,21 +44,37 @@ class StartActivity : AppCompatActivity() {
 
         // Configurar el botón para empezar
         binding.startButton.setOnClickListener {
-            val studentName = binding.studentNameEditText.text.toString().trim()
+            val studentNameRaw = binding.studentNameEditText.text.toString().trim()
             val selectedCourse = binding.courseSpinner.selectedItem.toString()
 
-            if (studentName.isEmpty()) {
+            if (studentNameRaw.isEmpty()) {
                 binding.studentNameEditText.error = "El nombre es requerido"
                 return@setOnClickListener
             }
 
-            // Iniciar la actividad de la cámara y pasarle los datos
-            val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("STUDENT_NAME", studentName)
-                putExtra("COURSE_NAME", selectedCourse)
+            lifecycleScope.launch {
+                val conectado = MongoService.connectAnonymously()
+                if (conectado) {
+                    val yaExiste = MongoService.estudianteExiste(studentNameRaw)
+                    if (!yaExiste) {
+                        MongoService.agregarEstudiante(studentNameRaw, selectedCourse)
+                        Toast.makeText(this@StartActivity, "Nuevo estudiante creado", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@StartActivity, "Estudiante encontrado", Toast.LENGTH_SHORT).show()
+                    }
+
+                    // Ir a la siguiente pantalla
+                    val intent = Intent(this@StartActivity, MainActivity::class.java).apply {
+                        putExtra("STUDENT_NAME", studentNameRaw)
+                        putExtra("COURSE_NAME", selectedCourse)
+                    }
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this@StartActivity, "Error al conectar con la base de datos", Toast.LENGTH_SHORT).show()
+                }
             }
-            startActivity(intent)
         }
+
 
         setupRecyclerView()
     }

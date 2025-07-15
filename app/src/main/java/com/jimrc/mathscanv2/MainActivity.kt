@@ -37,6 +37,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -131,6 +133,15 @@ class MainActivity : AppCompatActivity() {
 
         imageAnalysisExecutor = Executors.newSingleThreadExecutor()
         studentName = intent.getStringExtra("STUDENT_NAME") ?: "N/A"
+
+        MainScope().launch {
+            val connected = MongoService.connectAnonymously()
+            if (connected) {
+                Log.d("MainActivity", "MongoDB conectado")
+            } else {
+                Log.e("MainActivity", "No se pudo conectar a MongoDB")
+            }
+        }
 
         if (OpenCVLoader.initLocal()) {
             Log.i("OpenCV", "OpenCV se cargó correctamente")
